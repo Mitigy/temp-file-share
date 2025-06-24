@@ -11,6 +11,7 @@
   <body>
     <noscript>
       <style>
+        /* Hide the main content when JavaScript is disabled to prevent users from interacting with non-functional UI */
         main {
           display: none;
         }
@@ -62,7 +63,7 @@
         <h2>Uploads</h2>
         <uploads-wrapper id="uploads-wrapper"></uploads-wrapper>
       </section>
-    </div>
-    <spinning-throbber id="spinning-throbber" class="hidden"></spinning-throbber>
+      <spinning-throbber id="spinning-throbber" class="hidden"></spinning-throbber>
+    </main>
   </body>
 </html>
