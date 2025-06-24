@@ -32,27 +32,34 @@ export const createShareLink = (uploadCardData: UploadCardData): string => {
   return shareURL.toString()
 }
 
+const isUploadCardData = (data: any): data is UploadCardData => {
+  return (
+    data !== null &&
+    typeof data === 'object' &&
+    typeof data.fileName === 'string' &&
+    typeof data.directDownloadLink === 'string' &&
+    typeof data.guestToken === 'string' &&
+    typeof data.expirationTimestampMS === 'number'
+  )
+}
+
 export const parseAndValidateShareHash = (hash: string): UploadCardData => {
-  if (!hash) {
+  if (hash.trim().length === 0) {
     throw new Error('No hash provided')
   }
 
+  let data: unknown
   try {
     const decoded = atob(hash)
-    const data: UploadCardData = JSON.parse(decoded)
-
-    if (
-      typeof data.fileName !== 'string' ||
-      typeof data.directDownloadLink !== 'string' ||
-      typeof data.guestToken !== 'string' ||
-      typeof data.expirationTimestampMS !== 'number'
-    ) {
-      throw new Error('Invalid data format in share link')
-    }
-
-    return data
+    data = JSON.parse(decoded)
   } catch (error) {
-    console.error('Error parsing share hash:', error)
-    throw new Error('Error parsing share hash')
+    console.error('Error decoding or parsing share hash:', error)
+    throw new Error('Invalid share hash format')
   }
+
+  if (!isUploadCardData(data)) {
+    throw new Error('Invalid upload card data')
+  }
+
+  return data
 }
