@@ -125,3 +125,11 @@ export type UploadCardData = {
   expirationTimestampMS: number
   goFileUpload?: GoFileUpload
 }
+
+export type ToastType = 'success' | 'failure' | 'info' | 'warning' | 'loading'
+
+export type ToastOptions = {
+  title: string
+  description?: string
+  type?: ToastType
+}

@@ -3,6 +3,7 @@ import { isValidFile, isValidExpiryType, getExpirationTimestamp, parseAndValidat
 import './components/UploadCard'
 import './components/SpinningThrobber'
 import './components/UploadsWrapper'
+import './components/ToastsContainer'
 import type { SpinningThrobber } from './components/SpinningThrobber'
 import type { UploadsWrapper } from './components/UploadsWrapper'
 

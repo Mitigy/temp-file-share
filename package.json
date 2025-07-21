@@ -11,6 +11,10 @@
   },
   "devDependencies": {
     "typescript": "~5.8.3",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vite-awesome-svg-loader": "^2.1.0"
+  },
+  "dependencies": {
+    "@fluentui/svg-icons": "^1.1.306"
   }
 }
