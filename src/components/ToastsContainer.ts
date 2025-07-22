@@ -42,10 +42,13 @@ export class ToastsContainer extends HTMLElement {
       description: 'test1.txt was uploaded successfully.',
     })
 
-    this.addToastMessage({
+    const failToast = this.addToastMessage({
       type: 'failure',
       title: 'File upload failed',
       description: 'test1.txt failed to upload.',
+    })
+    failToast.addEventListener('dismiss', () => {
+      this.removeToastMessage(failToast)
     })
 
     this.addToastMessage({
@@ -83,6 +86,13 @@ export class ToastsContainer extends HTMLElement {
     this.toastsList.appendChild(li)
 
     return toastMessage
+  }
+
+  removeToastMessage(toast: ToastMessage): void {
+    const li = toast.parentElement
+    if (li) {
+      li.remove()
+    }
   }
 }
 

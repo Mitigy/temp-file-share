@@ -5,6 +5,7 @@ import ErrorCircle from '../../node_modules/@fluentui/svg-icons/icons/error_circ
 import Info from '../../node_modules/@fluentui/svg-icons/icons/info_20_regular.svg'
 import Warning from '../../node_modules/@fluentui/svg-icons/icons/warning_20_regular.svg'
 import SpinnerIos from '../../node_modules/@fluentui/svg-icons/icons/spinner_ios_20_regular.svg'
+import Dismiss from '../../node_modules/@fluentui/svg-icons/icons/dismiss_20_regular.svg'
 
 const ToastIcon = {
   success: CheckmarkCircle,
@@ -25,11 +26,16 @@ const ToastColor = {
 type ToastColor = typeof ToastColor[keyof typeof ToastColor]
 
 export class ToastMessage extends HTMLElement {
-  private iconElem: HTMLDivElement  
+  private primaryIconElem: HTMLDivElement  
   private titleElem: HTMLSpanElement
   private descriptionElem: HTMLSpanElement
+  private dismissElem: HTMLButtonElement
+  private hostElem: ToastMessage
 
   private _options?: ToastOptions
+  private timedDismissalTimeout?: number
+
+  private static readonly AUTO_DISMISS_DELAY_MS = 7000
 
   constructor() {
     super()
@@ -38,7 +44,7 @@ export class ToastMessage extends HTMLElement {
     shadow.innerHTML = `
       <style>
         :host {
-          background: hsl(0, 0%, 24%);
+          background: #323130;
           padding: 1rem;
           border-radius: 0.5rem;
           display: flex;
@@ -51,6 +57,8 @@ export class ToastMessage extends HTMLElement {
         }
         .icon {
           display: block;
+        }
+        .primaryIcon {
           width: var(--iconSize);
           height: var(--iconSize);
           fill: var(--iconColor);
@@ -68,25 +76,75 @@ export class ToastMessage extends HTMLElement {
         .title {
           font-weight: bold;
         }
+
+        .dismiss {
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 0;
+          margin-left: auto;
+          fill: white;
+          width: 24px;
+          height: 24px;
+          flex: 0 0 24px;
+        }
+        .dismiss:hover {
+          background-color: #3b3a39;
+        }
+        .dismiss:active {
+          background-color: #605e5c;
+        }
+        .dismiss svg {
+          width: calc(100% - 10px);
+          height: calc(100% - 10px);
+        }
+
         .hidden {
           display: none;
         }
       </style>
       <div class="column">
-        <div class="icon">✓</div>
+        <div class="icon primaryIcon">✓</div>
       </div>
       <div class="column">
         <span class="title">File uploaded successfully</span>
         <span class="description">Uploaded test1.txt</span>
       </div>
+      <button class="dismiss" aria-label="Dismiss toast">
+        <div class="icon">${Dismiss}</div>
+      </button>
     `
 
-    this.iconElem = shadow.querySelector('.icon')!
+    this.primaryIconElem = shadow.querySelector('.primaryIcon')!
     this.titleElem = shadow.querySelector('.title')!
     this.descriptionElem = shadow.querySelector('.description')!
+    this.dismissElem = shadow.querySelector('.dismiss')!
+    this.hostElem = shadow.host as ToastMessage
   }
 
+  // Called each time the element is added to the document
   connectedCallback() {
+    // Clear the dismissal timer when the user hovers over the toast
+    this.hostElem.addEventListener('mouseenter', () => {
+      this.cancelTimedDismissal()
+    })
+
+    // Set a new dismissal timer when the user stops hovering
+    this.hostElem.addEventListener('mouseleave', () => {
+      if (this.shouldAutoDismiss()) {
+        this.setTimedDismissal()
+      }
+    })
+
+    // Dismiss the toast when the dismiss button is clicked
+    this.dismissElem.addEventListener('click', () => {
+      this.dispatchEvent(new CustomEvent('dismiss', { bubbles: true }))
+    })
+  }
+
+  // Called each time the element is removed from the document.
+  disconnectedCallback() {
+    this.cancelTimedDismissal()
   }
 
   private render() {
@@ -94,20 +152,50 @@ export class ToastMessage extends HTMLElement {
 
     // Set icon size
     const iconSize = '3rem'
-    this.iconElem.style.setProperty('--iconSize', iconSize)
+    this.primaryIconElem.style.setProperty('--iconSize', iconSize)
 
     const type: ToastType = this._options.type ?? 'info'
-    this.iconElem.innerHTML = ToastIcon[type]
-    this.iconElem.style.setProperty('--iconColor', ToastColor[type])
-    this.iconElem.classList.toggle('spinner', type === 'loading')
+    this.primaryIconElem.innerHTML = ToastIcon[type]
+    this.primaryIconElem.style.setProperty('--iconColor', ToastColor[type])
+    this.primaryIconElem.classList.toggle('spinner', type === 'loading')
 
     this.titleElem.textContent = this._options.title
     this.descriptionElem.textContent = this._options.description ?? ''
+
+    // If the toast will auto-dismiss, hide the dismiss button
+    this.dismissElem.classList.toggle('hidden', this.shouldAutoDismiss())
+  }
+
+  private shouldAutoDismiss(): boolean {
+    // Only auto-dismiss success toasts
+    return this._options?.type === 'success'
+  }
+
+  private cancelTimedDismissal() {
+    // Clear the timer if it exists
+    if (this.timedDismissalTimeout) {
+      clearTimeout(this.timedDismissalTimeout)
+      this.timedDismissalTimeout = undefined
+    }
+  }
+
+  private setTimedDismissal(delay: number = ToastMessage.AUTO_DISMISS_DELAY_MS) {
+    // If a timer is already set, clear it
+    this.cancelTimedDismissal()
+
+    this.timedDismissalTimeout = setTimeout(() => {
+      this.remove()
+    }, delay)
   }
 
   set options(options: ToastOptions) {
     this._options = options
     this.render()
+
+    // Automatically remove success toasts after 7 seconds (https://fluent2.microsoft.design/components/web/react/core/toast/usage#timed-dismissal)
+    if (this.shouldAutoDismiss()) {
+      this.setTimedDismissal()
+    }
   }
 }
 
