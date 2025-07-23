@@ -1,4 +1,4 @@
-import type { ToastType, ToastOptions } from '../types'
+import type { ToastOptions, ResolvedToastOptions } from '../types'
 
 import CheckmarkCircle from '../../node_modules/@fluentui/svg-icons/icons/checkmark_circle_20_regular.svg'
 import ErrorCircle from '../../node_modules/@fluentui/svg-icons/icons/error_circle_20_regular.svg'
@@ -14,7 +14,6 @@ const ToastIcon = {
   warning: Warning,
   loading: SpinnerIos
 } as const
-type ToastIcon = typeof ToastIcon[keyof typeof ToastIcon]
 
 const ToastColor = {
   success: '#107C10',
@@ -23,7 +22,6 @@ const ToastColor = {
   warning: '#FFC107',
   loading: '#6C757D'
 } as const
-type ToastColor = typeof ToastColor[keyof typeof ToastColor]
 
 export class ToastMessage extends HTMLElement {
   private primaryIconElem: HTMLDivElement  
@@ -32,10 +30,10 @@ export class ToastMessage extends HTMLElement {
   private dismissElem: HTMLButtonElement
   private hostElem: ToastMessage
 
-  private _options?: ToastOptions
+  private _options?: ResolvedToastOptions
   private timedDismissalTimeout?: number
 
-  private static readonly AUTO_DISMISS_DELAY_MS = 7000
+  private static readonly DEFAULT_AUTO_DISMISS_DELAY_MS = 3000 // 7000
 
   constructor() {
     super()
@@ -131,8 +129,8 @@ export class ToastMessage extends HTMLElement {
 
     // Set a new dismissal timer when the user stops hovering
     this.hostElem.addEventListener('mouseleave', () => {
-      if (this.shouldAutoDismiss()) {
-        this.setTimedDismissal()
+      if (this._options?.autoDismiss) {
+        this.setTimedDismissal(this._options.autoDismissDuration)
       }
     })
 
@@ -154,21 +152,26 @@ export class ToastMessage extends HTMLElement {
     const iconSize = '3rem'
     this.primaryIconElem.style.setProperty('--iconSize', iconSize)
 
-    const type: ToastType = this._options.type ?? 'info'
+    // Set icon and icon color based on the toast type
+    const type = this._options.type
     this.primaryIconElem.innerHTML = ToastIcon[type]
     this.primaryIconElem.style.setProperty('--iconColor', ToastColor[type])
     this.primaryIconElem.classList.toggle('spinner', type === 'loading')
 
     this.titleElem.textContent = this._options.title
-    this.descriptionElem.textContent = this._options.description ?? ''
+    this.descriptionElem.textContent = this._options.description
 
     // If the toast will auto-dismiss, hide the dismiss button
-    this.dismissElem.classList.toggle('hidden', this.shouldAutoDismiss())
+    this.dismissElem.classList.toggle('hidden', this._options.autoDismiss)
   }
 
-  private shouldAutoDismiss(): boolean {
-    // Only auto-dismiss success toasts
-    return this._options?.type === 'success'
+  private setTimedDismissal(delay: number = ToastMessage.DEFAULT_AUTO_DISMISS_DELAY_MS) {
+    // If a timer is already set, clear it
+    this.cancelTimedDismissal()
+
+    this.timedDismissalTimeout = setTimeout(() => {
+      this.dispatchEvent(new CustomEvent('dismiss', { bubbles: true }))
+    }, delay)
   }
 
   private cancelTimedDismissal() {
@@ -179,22 +182,36 @@ export class ToastMessage extends HTMLElement {
     }
   }
 
-  private setTimedDismissal(delay: number = ToastMessage.AUTO_DISMISS_DELAY_MS) {
-    // If a timer is already set, clear it
-    this.cancelTimedDismissal()
+  private resolveToastOptions(options: ToastOptions): ResolvedToastOptions {
+    const resolved: ToastOptions = { ...options }
+    resolved.description ??= ''
+    resolved.type ??= 'info'
 
-    this.timedDismissalTimeout = setTimeout(() => {
-      this.remove()
-    }, delay)
+    // If autoDismiss is not set, default to true for success and info types
+    resolved.autoDismiss ??= options.type === 'success' || options.type === 'info'
+
+    // If autoDismiss is false but autoDismissDuration is set,
+    // warn the user and ignore the duration
+    if (!resolved.autoDismiss && resolved.autoDismissDuration) {
+      console.warn('autoDismissDuration will be ignored because autoDismiss is false.')
+      resolved.autoDismissDuration = undefined
+    } else if (resolved.autoDismissDuration === undefined) {
+      // If autoDismiss is true but no duration is set, use the default
+      resolved.autoDismissDuration = ToastMessage.DEFAULT_AUTO_DISMISS_DELAY_MS
+    }
+
+    return resolved as ResolvedToastOptions
   }
 
   set options(options: ToastOptions) {
-    this._options = options
-    this.render()
+    const resolvedToastOptions = this.resolveToastOptions(options)
+    this._options = resolvedToastOptions
 
-    // Automatically remove success toasts after 7 seconds (https://fluent2.microsoft.design/components/web/react/core/toast/usage#timed-dismissal)
-    if (this.shouldAutoDismiss()) {
-      this.setTimedDismissal()
+    this.render()
+    this.cancelTimedDismissal()
+
+    if (options.autoDismiss) {
+      this.setTimedDismissal(options.autoDismissDuration)
     }
   }
 }

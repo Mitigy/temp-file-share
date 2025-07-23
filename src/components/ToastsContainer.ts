@@ -35,45 +35,7 @@ export class ToastsContainer extends HTMLElement {
     `
 
     this.toastsList = shadow.querySelector('.toastsList')!
-
-    this.addToastMessage({
-      type: 'success',
-      title: 'File uploaded successfully',
-      description: 'test1.txt was uploaded successfully.',
-    })
-
-    const failToast = this.addToastMessage({
-      type: 'failure',
-      title: 'File upload failed',
-      description: 'test1.txt failed to upload.',
-    })
-    failToast.addEventListener('dismiss', () => {
-      this.removeToastMessage(failToast)
-    })
-
-    this.addToastMessage({
-      type: 'info',
-      title: 'Share link copied to clipboard',
-      description: 'The share link for test1.txt has been copied to your clipboard.',
-    })
-
-    this.addToastMessage({
-      type: 'warning',
-      title: 'Upload nearing expiry',
-      description: 'test1.txt  will expire in less than 5 minutes.',
-    })
-
-    /*const fileUploadToast = */this.addToastMessage({
-      type: 'loading',
-      title: 'File upload in progress',
-      description: 'test1.txt is currently being uploaded.',
-    })
   }
-
-  // private removeCard(card: UploadCard): void {
-  //   card.remove()
-  //   this.updateNoUploadsVisibility()
-  // }
 
   addToastMessage(options: ToastOptions): ToastMessage {
     const li = document.createElement('li')
@@ -81,6 +43,11 @@ export class ToastsContainer extends HTMLElement {
 
     const toastMessage = document.createElement('toast-message') as ToastMessage
     toastMessage.options = options
+
+    // Remove the toast message when it is dismissed
+    toastMessage.addEventListener('dismiss', () => {
+      this.removeToastMessage(toastMessage)
+    })
 
     li.appendChild(toastMessage)
     this.toastsList.appendChild(li)

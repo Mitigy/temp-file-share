@@ -132,4 +132,8 @@ export type ToastOptions = {
   title: string
   description?: string
   type?: ToastType
+  autoDismiss?: boolean
+  autoDismissDuration?: number // Duration in milliseconds for auto-dismiss
 }
+
+export type ResolvedToastOptions = Required<ToastOptions>
