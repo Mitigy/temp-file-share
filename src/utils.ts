@@ -24,11 +24,19 @@ export function getExpirationTimestamp(expiryType: ExpiryType, customDate?: Date
   return now + DURATION_MILLISECONDS[expiryType]
 }
 
+// This function creates a hash for iMessage sharing by inserting a hyphen every 301 characters
+// Blog post about this: https://www.patrickweaver.net/blog/imessage-mystery/
+// Stack Overflow answer for inserting a character every N characters: https://stackoverflow.com/a/45523827
+const createIMessageHash = (hash: string): string => {
+  return hash.split('').reduce((a, e, i) => a + e + (i % 301 === 300 && i + 1 !== hash.length ? '-' : ''), '')
+}
+
 export const createShareLink = (uploadCardData: UploadCardData): string => {
   const hash = btoa(JSON.stringify(uploadCardData))
+  const iMessageHash = createIMessageHash(hash)
 
   const shareURL = new URL(location.href)
-  shareURL.hash = hash
+  shareURL.hash = iMessageHash
   return shareURL.toString()
 }
 
@@ -50,7 +58,8 @@ export const parseAndValidateShareHash = (hash: string): UploadCardData => {
 
   let data: unknown
   try {
-    const decoded = atob(hash)
+    const hashNoHyphens = hash.replaceAll('-', '')
+    const decoded = atob(hashNoHyphens)
     data = JSON.parse(decoded)
   } catch (error) {
     console.error('Error decoding or parsing share hash:', error)
