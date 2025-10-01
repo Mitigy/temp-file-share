@@ -2,9 +2,11 @@ import { goFileClient } from '../GoFileClient'
 import type { UploadCardData } from '../types'
 import { createShareLink } from '../utils'
 import type { SpinningThrobber } from './SpinningThrobber'
+import type { ToastsContainer } from './ToastsContainer'
 import type { UploadCard } from './UploadCard'
 
 const throbber = document.getElementById('spinning-throbber') as SpinningThrobber
+const toastsContainer = document.getElementById('toasts-container') as ToastsContainer
 
 export class UploadsWrapper extends HTMLElement {
   private uploadsList: HTMLDivElement
@@ -65,18 +67,31 @@ export class UploadsWrapper extends HTMLElement {
         // Show a throbber while deleting
         throbber.show()
 
+        let successfullyDeleted = false
+
         try {
           await goFileClient.deleteUpload(goFileUpload)
           this.removeCard(card)
-
+          successfullyDeleted = true
         } catch (error) {
           console.error('Error deleting file:', error)
-          alert('Failed to delete file. Please try again.')
+          toastsContainer.addToastMessage({
+            type: 'failure',
+            title: 'File Deletion Error',
+            description: `Failed to delete file "${fileName}". Please try again.`
+          })
         }
 
         // Hide the throbber after deletion
         throbber.hide()
-        console.log('File deleted successfully.')
+
+        if (successfullyDeleted) {
+          toastsContainer.addToastMessage({
+            type: 'success',
+            title: 'File Deleted',
+            description: `The file "${fileName}" has been deleted successfully.`
+          })
+        }
       })
     }
 
@@ -105,7 +120,11 @@ export class UploadsWrapper extends HTMLElement {
         URL.revokeObjectURL(url)
       } catch (error) {
         console.error('Error downloading file:', error)
-        alert('Failed to download file. Please try again.')
+        toastsContainer.addToastMessage({
+          type: 'failure',
+          title: 'File Download Error',
+          description: `Failed to download file "${fileName}". Please try again.`
+        })
       }
 
       // Hide the throbber after download
@@ -122,12 +141,19 @@ export class UploadsWrapper extends HTMLElement {
 
       navigator.clipboard.writeText(shareLink)
       .then(() => {
-        console.log('File link copied to clipboard.')
-        alert('File link copied to clipboard!')
+        toastsContainer.addToastMessage({
+          type: 'success',
+          title: 'Link Copied',
+          description: 'File link copied to clipboard!'
+        })
       })
       .catch(err => {
+        toastsContainer.addToastMessage({
+          type: 'failure',
+          title: 'Link Copy Error',
+          description: 'Failed to copy file link. Please try again.'
+        })
         console.error('Failed to copy file link:', err)
-        alert('Failed to copy file link. Please try again.')
       })
     })
 
@@ -143,13 +169,23 @@ export class UploadsWrapper extends HTMLElement {
       }
 
       navigator.share(shareData)
-        .then(() => console.log('Share successful'))
-        .catch(error => console.error('Error sharing:', error))
+        .then(() => toastsContainer.addToastMessage({
+          type: 'success',
+          title: 'Link Shared',
+          description: 'File link shared successfully!'
+        }))
+        .catch(error => {
+          console.error('Error sharing:', error)
+          toastsContainer.addToastMessage({
+            type: 'failure',
+            title: 'Link Share Error',
+            description: 'Failed to share file link. Please try again.'
+          })
+        })
     })
     // #endregion
     
     this.uploadsList.appendChild(card)
-    console.log(`Added upload card for: ${fileName}`)
     this.updateNoUploadsVisibility()
 
     // Remove the card after the expiry time

@@ -92,7 +92,6 @@ export class UploadCard extends HTMLElement {
       </div>
     `
 
-    console.log(shadow.querySelector('.card'))
     this.cardElem = shadow.querySelector('.card')!
     this.fileNameElem = shadow.querySelector('.file-name')!
     this.receivedBadge = shadow.querySelector('.received-badge')!
@@ -131,7 +130,6 @@ export class UploadCard extends HTMLElement {
   }
 
   private setExpiredState() {
-    console.log(this.cardElem)
     this.cardElem.classList.add('expired')
 
     this.deleteBtn.disabled = true

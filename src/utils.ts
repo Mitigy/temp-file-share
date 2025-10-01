@@ -62,8 +62,9 @@ export const parseAndValidateShareHash = (hash: string): UploadCardData => {
     const decoded = atob(hashNoHyphens)
     data = JSON.parse(decoded)
   } catch (error) {
-    console.error('Error decoding or parsing share hash:', error)
-    throw new Error('Invalid share hash format')
+    throw new Error('Invalid share hash format', {
+      cause: error
+    })
   }
 
   if (!isUploadCardData(data)) {
