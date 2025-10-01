@@ -210,8 +210,8 @@ export class ToastMessage extends HTMLElement {
     this.render()
     this.cancelTimedDismissal()
 
-    if (options.autoDismiss) {
-      this.setTimedDismissal(options.autoDismissDuration)
+    if (this._options.autoDismiss) {
+      this.setTimedDismissal(this._options.autoDismissDuration)
     }
   }
 }

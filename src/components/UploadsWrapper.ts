@@ -60,6 +60,14 @@ export class UploadsWrapper extends HTMLElement {
     card.received = !goFileUpload
     card.expiry = expirationTimestampMS
 
+    // Create the share link
+    const shareLink = createShareLink({
+      fileName,
+      directDownloadLink,
+      guestToken,
+      expirationTimestampMS
+    })
+
     // #region Listen for events on the card
     // Only add delete event listener if upload is provided (not from link)
     if (goFileUpload) {
@@ -132,13 +140,6 @@ export class UploadsWrapper extends HTMLElement {
     })
 
     card.addEventListener('copy', () => {
-      const shareLink = createShareLink({
-        fileName,
-        directDownloadLink,
-        guestToken,
-        expirationTimestampMS
-      })
-
       navigator.clipboard.writeText(shareLink)
       .then(() => {
         toastsContainer.addToastMessage({
@@ -160,12 +161,7 @@ export class UploadsWrapper extends HTMLElement {
     card.addEventListener('share', () => {
       const shareData = {
         title: `Temp File Share\nDownload the file ${fileName}`,
-        url: createShareLink({
-          fileName,
-          directDownloadLink,
-          guestToken,
-          expirationTimestampMS
-        })
+        url: shareLink
       }
 
       navigator.share(shareData)
@@ -187,11 +183,6 @@ export class UploadsWrapper extends HTMLElement {
     
     this.uploadsList.appendChild(card)
     this.updateNoUploadsVisibility()
-
-    // Remove the card after the expiry time
-    // setTimeout(() => {
-    //   this.removeCard(card)
-    // }, expirationTimestamp - Date.now())
   }
 }
 
