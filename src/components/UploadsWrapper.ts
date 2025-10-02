@@ -72,8 +72,13 @@ export class UploadsWrapper extends HTMLElement {
     // Only add delete event listener if upload is provided (not from link)
     if (goFileUpload) {
       card.addEventListener('delete', async () => {
-        // Show a throbber while deleting
-        throbber.show()
+        // Create a toast to reuse and disable the card
+        const fileDeleteToast = toastsContainer.addToastMessage({
+          type: 'loading',
+          title: 'Deleting File...',
+          description: `Attempting to delete file "${fileName}"...`
+        })
+        card.disabled = true
 
         let successfullyDeleted = false
 
@@ -83,22 +88,22 @@ export class UploadsWrapper extends HTMLElement {
           successfullyDeleted = true
         } catch (error) {
           console.error('Error deleting file:', error)
-          toastsContainer.addToastMessage({
+          fileDeleteToast.options = {
             type: 'failure',
             title: 'File Deletion Error',
             description: `Failed to delete file "${fileName}". Please try again.`
-          })
+          }
         }
-
-        // Hide the throbber after deletion
-        throbber.hide()
-
+        
+        // Re-enable the card
+        card.disabled = false
+        
         if (successfullyDeleted) {
-          toastsContainer.addToastMessage({
+          fileDeleteToast.options = {
             type: 'success',
             title: 'File Deleted',
             description: `The file "${fileName}" has been deleted successfully.`
-          })
+          }
         }
       })
     }

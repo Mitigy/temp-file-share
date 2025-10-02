@@ -129,6 +129,13 @@ export class UploadCard extends HTMLElement {
     })
   }
 
+  set disabled(isDisabled: boolean) {
+    this.deleteBtn.disabled = isDisabled
+    this.downloadBtn.disabled = isDisabled
+    this.copyBtn.disabled = isDisabled
+    this.shareBtn.disabled = isDisabled
+  }
+
   private setExpiredState() {
     this.cardElem.classList.add('expired')
 
